@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { JWT_SECRET } from "@repo/backend-common/config";
 
 declare module 'express' {
   interface Request {
@@ -9,12 +10,7 @@ declare module 'express' {
 
 export function middleware(req: Request, res: Response, next: NextFunction) {
     const token = req.headers["authorization"] ?? "";
-
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-        throw new Error('JWT_SECRET is not defined in the environment variables');
-    }
-    const decoded = jwt.verify(token, secret);
+    const decoded = jwt.verify(token, JWT_SECRET);
 
 
     if (typeof decoded !== 'string' && 'userId' in decoded) {
