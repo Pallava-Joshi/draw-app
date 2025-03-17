@@ -100,6 +100,19 @@ app.get("/chats/:roomId", async (req, res) => {
     })
     res.json(chats);
 })
+app.get("/room/:slug", async (req, res) => {
+    const slug = req.params.slug;
+    const room = await prismaClient.room.findUnique({
+        where: {
+            slug
+        }
+    })
+    if(!room) {
+        res.status(404).send('Room not found');
+        return;
+    }
+    res.json(room);
+})
 
 app.listen(3001, () => {
     console.log("Server started on port 3001");
