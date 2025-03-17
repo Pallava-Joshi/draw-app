@@ -44,7 +44,7 @@ wss.on("connection", function connection(ws: WebSocket, request) {
   
 
   ws.on("message", async function message(data) {
-    try{
+    try {
       const parsedData = JSON.parse(data as unknown as string);
       if (parsedData.type === "join_room") {
         const user = users.find(x => x.ws === ws)
@@ -61,29 +61,32 @@ wss.on("connection", function connection(ws: WebSocket, request) {
         const roomId = parsedData.roomId;
         const message = parsedData.message;
 
-        if(!roomId || !message) return;
+        if(!roomId || !message){
+          ws.send(JSON.stringify({ type: "error", message: "Invalid inputs" }));
+          return;
+        }
   //ideal approach is to push it to a queue - pipeline queue (check chess video)
-        await prismaClient.chat.create({
-          data: {
-            roomId: roomId,
-            userId: userId,
-            message: message
-          }
-        })
+          await prismaClient.chat.create({
+            data: {
+              roomId,
+              userId,
+              message
+            }
+          })
 
-        users.forEach(user=>{
-          if(user.rooms.includes(roomId))
-          { 
-            user.ws.send(JSON.stringify({
-              type: "chat",
-              message: message,
-              roomId: roomId
-            }))
-          }
-        })
+          users.forEach(user=>{
+            if(user.rooms.includes(roomId)) {
+              user.ws.send(JSON.stringify({
+                type: "chat",
+                message,
+                roomId
+              }))
+            }
+          })
       }
-    }catch(e){
-      console.log(e);
+    } catch (e) {
+      console.error("Error processing message:", e);
+      ws.send(JSON.stringify({ type: "error", message: "Failed to process message" }));
     }
   });
 });
