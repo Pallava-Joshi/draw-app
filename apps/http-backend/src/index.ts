@@ -101,17 +101,22 @@ app.get("/chats/:roomId", async (req, res) => {
     res.json(chats);
 })
 app.get("/room/:slug", async (req, res) => {
-    const slug = req.params.slug;
-    const room = await prismaClient.room.findUnique({
-        where: {
-            slug
-        }
-    })
-    if(!room) {
-        res.status(404).send('Room not found');
-        return;
-    }
-    res.json(room);
+   try {
+     const slug = req.params.slug;
+     const room = await prismaClient.room.findFirst({
+         where: {
+             slug
+         }
+     })
+     if(!room) {
+         res.status(404).send('Room not found');
+         return;
+     }
+     res.json(room);
+   } catch (error) {
+    res.status(500).send('Internal Server Error');
+    return;
+   }
 })
 
 app.listen(3001, () => {

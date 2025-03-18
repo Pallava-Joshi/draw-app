@@ -9,11 +9,11 @@ export default function Home() {
   const router = useRouter();
   // need to implement react hook forms - good practice
   return (
-    <div className={styles.page}>
-      <input type="text" value={roomId} onChange={(e) => {
+    <div style={{ display:"flex", justifyContent:"center", alignItems:"center"}} className={styles.page}>
+      <input style={{ padding: 10}} type="text" value={roomId} onChange={(e) => {
         setRoomId(e.target.value)
       }} placeholder="Room ID"/>
-      <button onClick={() => {
+      <button style={{ padding:10 }} onClick={() => {
         router.push(`/room/${roomId}`);
       }}>Join Room</button>
     </div>
