@@ -14,9 +14,10 @@ export default function ChatRoomClient({
     useEffect(()=>{
         if( socket && !loading){
             //use seperate hook (useEffect) for this
+            alert("Joined room");
             socket.send(JSON.stringify({
-                type: "join",
-                id
+                type: "join_room",
+                roomId: id
             }));
 
             socket.onmessage = (event)=>{
@@ -26,7 +27,7 @@ export default function ChatRoomClient({
                 }
             }
         }
-    },[])
+    },[socket, loading, id])
     return (
         <div>
             <h1>Chat Room Client</h1>
