@@ -45,7 +45,9 @@ wss.on("connection", function connection(ws: WebSocket, request) {
 
   ws.on("message", async function message(data) {
     try {
-      const parsedData = JSON.parse(data as unknown as string);
+      const parsedData = typeof data === 'string' ? JSON.parse(data) : JSON.parse(data.toString());
+      // console.log("raw data:" +parsedData.type + " "+typeof data);
+
       if (parsedData.type === "join_room") {
         const user = users.find(x => x.ws === ws)
         user?.rooms.push(parsedData.roomId);
@@ -61,6 +63,7 @@ wss.on("connection", function connection(ws: WebSocket, request) {
         const roomId = parsedData.roomId;
         const message = parsedData.message;
 
+        console.log("message:", message +" "+ typeof message);
         if(!roomId || !message){
           ws.send(JSON.stringify({ type: "error", message: "Invalid inputs" }));
           return;
@@ -68,7 +71,7 @@ wss.on("connection", function connection(ws: WebSocket, request) {
   //ideal approach is to push it to a queue - pipeline queue (check chess video)
           await prismaClient.chat.create({
             data: {
-              roomId,
+              roomId: Number(roomId),
               userId,
               message
             }
