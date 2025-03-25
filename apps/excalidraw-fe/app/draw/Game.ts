@@ -1,24 +1,26 @@
 import getExistingShapes from "./http";
 import { Shape, Tool } from "./type";
 
+interface ShapeWithId {
+    id?: number; // Database ID of the chat message (optional until received from backend)
+    clientId?: string; // Temporary client-side ID to track shapes before the database ID is received
+    shape: Shape;
+}
 
-export class Game{
+export class Game {
     private canvas: HTMLCanvasElement;
-    private ctx: CanvasRenderingContext2D
-    private existingShapes: Shape[] = [];
+    private ctx: CanvasRenderingContext2D;
+    private existingShapes: ShapeWithId[] = [];
     private roomId: string;
     private clicked: boolean = false;
     private startX: number = 0;
     private startY: number = 0;
     private selectedTool: Tool | null = null;
-
-    private selectedShape: Shape | null = null; // Track the currently selected shape for dragging
-    private isDragging: boolean = false; // Track if we're in dragging mode
-
-
+    private selectedShape: ShapeWithId | null = null;
+    private isDragging: boolean = false;
     socket: WebSocket;
 
-    constructor(canvas: HTMLCanvasElement, roomId: string, socket:WebSocket){
+    constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d')!;
         this.roomId = roomId;
@@ -27,62 +29,84 @@ export class Game{
         this.initHandlers();
         this.initMouseHandler();
     }
-    setTool(tool: Tool){
+
+    setTool(tool: Tool) {
         this.selectedTool = tool;
     }
-    
-    async init(){
+
+    async init() {
         this.existingShapes = await getExistingShapes(this.roomId);
         this.clearCanvas();
     }
 
-    destroy(){
+    destroy() {
         this.canvas.removeEventListener("mousedown", this.initMouseHandler);
         this.canvas.removeEventListener("mousemove", this.initMouseHandler);
         this.canvas.removeEventListener("mouseup", this.initMouseHandler);
     }
 
-    initHandlers(){
+    initHandlers() {
         this.socket.onmessage = (event) => {
             const message = JSON.parse(event.data);
-            
-            if(message.type === "chat") {
-                const parsedShape = JSON.parse(message.message);
-                this.existingShapes.push(parsedShape.shape);
+            if (message.type === "chat") {
+                const parsedMessage = JSON.parse(message.message);
+                const newShape = parsedMessage.shape;
+
+                if (parsedMessage.action === "update") {
+                    // Update the existing shape in existingShapes
+                    const index = this.existingShapes.findIndex(item => item.id === parsedMessage.id);
+                    if (index !== -1) {
+                        this.existingShapes[index].shape = newShape;
+                    }
+                } else {
+                    // Add new shape with the database id
+                    const index = this.existingShapes.findIndex(item => item.clientId === parsedMessage.shape.clientId);
+                    if (index !== -1) {
+                        // Update the temporary shape with the database id
+                        this.existingShapes[index].id = parsedMessage.id;
+                        delete this.existingShapes[index].clientId; // Remove the temporary clientId
+                    } else {
+                        // In case the shape wasn't added locally (e.g., another client created it)
+                        this.existingShapes.push({
+                            id: parsedMessage.id,
+                            shape: newShape
+                        });
+                    }
+                }
                 this.clearCanvas();
             }
-        }
+        };
     }
 
-    renderShapes(){
-        this.existingShapes.forEach((shape,index) => {
-            console.log("Clear canvas called, shape type pushed into db:", shape.type, "with index:", index)
-            if(shape.type === "rectangle") {
+    renderShapes() {
+        this.existingShapes.forEach((item, index) => {
+            const shape = item.shape;
+            console.log("Clear canvas called, shape type pushed into db:", shape.type, "with index:", index);
+            if (shape.type === "rectangle") {
                 this.ctx.strokeStyle = "white";
                 this.ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
             }
-            if(shape.type === "circle") {
+            if (shape.type === "circle") {
                 this.ctx.strokeStyle = "white";
                 this.ctx.beginPath();
                 this.ctx.arc(shape.x, shape.y, shape.radius, 0, Math.PI * 2);
                 this.ctx.stroke();
             }
-            if(shape.type === "line") {
+            if (shape.type === "line") {
                 this.ctx.strokeStyle = "white";
                 this.ctx.beginPath();
                 this.ctx.moveTo(shape.x1, shape.y1);
                 this.ctx.lineTo(shape.x2, shape.y2);
                 this.ctx.stroke();
             }
-        })
+        });
     }
 
-    clearCanvas(){
-        this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
+    clearCanvas() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.fillStyle = "black";
-        this.ctx.fillRect(0,0,this.canvas.width, this.canvas.height)
-        // console.log(this.existingShapes)
-        this.renderShapes();      
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.renderShapes();
     }
 
     private isPointInShape(shape: Shape, x: number, y: number): boolean {
@@ -93,46 +117,42 @@ export class Game{
             const dy = y - shape.y;
             return Math.sqrt(dx * dx + dy * dy) <= shape.radius;
         } else if (shape.type === "line") {
-            // Use a similar approach to the Stack Overflow solution for lines
-            const tolerance = 5; // Same tolerance as in the Stack Overflow code
+            const tolerance = 5;
             const lerp = (a: number, b: number, t: number) => a + t * (b - a);
-
             const dx = shape.x2 - shape.x1;
             const dy = shape.y2 - shape.y1;
             const t = ((x - shape.x1) * dx + (y - shape.y1) * dy) / (dx * dx + dy * dy);
-            const clampedT = Math.max(0, Math.min(1, t)); // Clamp t between 0 and 1
+            const clampedT = Math.max(0, Math.min(1, t));
             const nearestX = lerp(shape.x1, shape.x2, clampedT);
             const nearestY = lerp(shape.y1, shape.y2, clampedT);
-
             const distance = Math.sqrt((x - nearestX) ** 2 + (y - nearestY) ** 2);
             return distance <= tolerance;
         }
         return false;
     }
 
-    initMouseHandler(){
+    initMouseHandler() {
         this.canvas.addEventListener("mousedown", (e) => {
             this.clicked = true;
             this.startX = e.clientX;
             this.startY = e.clientY;
 
             if (this.selectedTool === "select") {
-                // Find the shape under the mouse
                 this.selectedShape = null;
-                for (const shape of this.existingShapes) {
-                    if (this.isPointInShape(shape, this.startX, this.startY)) {
-                        this.selectedShape = shape;
+                for (const item of this.existingShapes) {
+                    if (this.isPointInShape(item.shape, this.startX, this.startY)) {
+                        this.selectedShape = item;
                         this.isDragging = true;
                         break;
                     }
                 }
-                this.clearCanvas(); // Re-render to show the selected shape in red
+                this.clearCanvas();
                 return;
             }
-        })
+        });
 
         this.canvas.addEventListener("mousemove", (e) => {
-            if(!this.clicked){
+            if (!this.clicked) {
                 return;
             }
             const currentX = e.clientX;
@@ -141,30 +161,30 @@ export class Game{
             const dy = currentY - this.startY;
 
             if (this.selectedTool === "select" && this.isDragging && this.selectedShape) {
-                // Update the position of the selected shape based on mouse movement
-                if (this.selectedShape.type === "rectangle") {
-                    this.selectedShape.x += dx;
-                    this.selectedShape.y += dy;
-                } else if (this.selectedShape.type === "circle") {
-                    this.selectedShape.x += dx;
-                    this.selectedShape.y += dy;
-                } else if (this.selectedShape.type === "line") {
-                    this.selectedShape.x1 += dx;
-                    this.selectedShape.y1 += dy;
-                    this.selectedShape.x2 += dx;
-                    this.selectedShape.y2 += dy;
+                const shape = this.selectedShape.shape;
+                if (shape.type === "rectangle") {
+                    shape.x += dx;
+                    shape.y += dy;
+                } else if (shape.type === "circle") {
+                    shape.x += dx;
+                    shape.y += dy;
+                } else if (shape.type === "line") {
+                    shape.x1 += dx;
+                    shape.y1 += dy;
+                    shape.x2 += dx;
+                    shape.y2 += dy;
                 }
                 this.startX = currentX;
                 this.startY = currentY;
-                this.clearCanvas(); // Re-render the canvas with the updated shape position
+                this.clearCanvas();
                 return;
             }
+
             const width = e.clientX - this.startX;
             const height = e.clientY - this.startY;
             this.clearCanvas();
-           
             this.ctx.strokeStyle = "white";
-            // console.log(this.selectedTool);
+
             switch (this.selectedTool) {
                 case "rectangle":
                     this.ctx.strokeRect(this.startX, this.startY, width, height);
@@ -181,72 +201,80 @@ export class Game{
                     this.ctx.stroke();
                     break;
             }
-        })
+        });
 
         this.canvas.addEventListener("mouseup", (e) => {
             this.clicked = false;
             const width = e.clientX - this.startX;
             const height = e.clientY - this.startY;
-            
-            let shape: Shape;
-            if(!this.selectedTool) return;
 
-            if (this.selectedTool === "select" && this.selectedShape) {
-                // Send the updated shape position to the server
+            if (!this.selectedTool) return;
+
+            if (this.selectedTool === "select" && this.isDragging && this.selectedShape) {
+                this.isDragging = false;
+                // Send an update message for the dragged shape
                 this.socket.send(JSON.stringify({
                     type: "chat",
-                    message: JSON.stringify({ shape: this.selectedShape }),
+                    message: JSON.stringify({
+                        shape: this.selectedShape.shape,
+                        id: this.selectedShape.id,
+                        action: "update"
+                    }),
                     roomId: this.roomId
                 }));
-                this.selectedShape = null; 
-
-                
+                this.selectedShape = null;
                 return;
             }
-            
+
+            // Only create shapes for "rectangle", "circle", and "line" tools
+            if (this.selectedTool !== "rectangle" && this.selectedTool !== "circle" && this.selectedTool !== "line") {
+                return;
+            }
+
+            let shape: Shape;
             switch (this.selectedTool) {
-            case "rectangle":
-                shape = {
-                    type: "rectangle",
-                    x: this.startX,
-                    y: this.startY,
-                    width,
-                    height
-                };
-                break;
-            case "circle":
-                shape = {
-                    type: "circle",
-                    x: this.startX + width / 2,
-                    y: this.startY + height / 2,
-                    radius: Math.sqrt((width * width + height * height) / 4)
-                };
-                break;
-            case "line":
-                shape = {
-                    type: "line",
-                    x1: this.startX,
-                    y1: this.startY,
-                    x2: e.clientX,
-                    y2: e.clientY
-                };
-                break;
-            default:
-                shape = {
-                    type: "select"
-                };
-                break;
+                case "rectangle":
+                    shape = {
+                        type: "rectangle",
+                        x: this.startX,
+                        y: this.startY,
+                        width,
+                        height,
+                        clientId: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}` // Temporary client-side id
+                    };
+                    break;
+                case "circle":
+                    shape = {
+                        type: "circle",
+                        x: this.startX + width / 2,
+                        y: this.startY + height / 2,
+                        radius: Math.sqrt((width * width + height * height) / 4),
+                        clientId: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+                    };
+                    break;
+                case "line":
+                    shape = {
+                        type: "line",
+                        x1: this.startX,
+                        y1: this.startY,
+                        x2: e.clientX,
+                        y2: e.clientY,
+                        clientId: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+                    };
+                    break;
+                default:
+                    return; // Should never reach here due to the check above
             }
-            if(this.selectedTool !== "select"){
-                this.existingShapes.push(shape);
-            }
-            // console.log(this.existingShapes);
-            // this.clearCanvas();
+
+            this.existingShapes.push({ shape });
             this.socket.send(JSON.stringify({
                 type: "chat",
-                message: JSON.stringify({shape}),
+                message: JSON.stringify({
+                    shape,
+                    action: "create"
+                }),
                 roomId: this.roomId
-            }))
-        })
+            }));
+        });
     }
 }
