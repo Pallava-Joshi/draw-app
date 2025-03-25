@@ -15,6 +15,8 @@ export type Shape = {
     y1: number;
     x2: number;
     y2: number;
+} | {
+    type: "select";
 }
 
-export type Tool = "rectangle" | "circle" | "line";
+export type Tool = "rectangle" | "circle" | "line" | "hand" | "select" | "eraser";

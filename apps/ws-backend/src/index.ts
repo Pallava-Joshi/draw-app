@@ -63,7 +63,7 @@ wss.on("connection", function connection(ws: WebSocket, request) {
         const roomId = parsedData.roomId;
         const message = parsedData.message;
 
-        console.log("message:", message +" "+ typeof message);
+        // console.log("message:", message +" "+ typeof message);
         if(!roomId || !message){
           ws.send(JSON.stringify({ type: "error", message: "Invalid inputs" }));
           return;
@@ -78,12 +78,12 @@ wss.on("connection", function connection(ws: WebSocket, request) {
           })
 
           users.forEach(user=>{
-            if(user.rooms.includes(roomId)) {
+            if (user.ws !== ws && user.rooms.includes(roomId)) { // Exclude the sender
               user.ws.send(JSON.stringify({
-                type: "chat",
-                message,
-                roomId
-              }))
+                  type: "chat",
+                  message,
+                  roomId
+              }));
             }
           })
       }
