@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
+import { HTTP_BACKEND, WS_BACKEND } from "../config";
 export function AuthPage({ isSignin }: { isSignin: boolean }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -22,14 +22,14 @@ export function AuthPage({ isSignin }: { isSignin: boolean }) {
       ? { username: email, password }
       : { username: email, password, name };
 
-    console.log(`Sending request to http://localhost:3001${endpoint}:`, body);
+    console.log(`Sending request to ${HTTP_BACKEND}${endpoint}:`, body);
 
     try {
-      const response = await fetch(`http://localhost:3001${endpoint}`, {
+      const response = await fetch(`${HTTP_BACKEND}${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Origin": "http://localhost:3000", // Explicitly set the Origin header
+          "Origin": `${WS_BACKEND}`, 
         },
         body: JSON.stringify(body),
       });

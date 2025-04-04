@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { RoomCard } from "@/components/RoomCard";
 import { FaPlus, FaSignOutAlt } from "react-icons/fa";
-
+import { HTTP_BACKEND } from "../../config";
 interface Room {
   id: number;
   slug: string;
@@ -30,7 +30,7 @@ export default function Lobby() {
 
     const fetchRooms = async () => {
       try {
-        const response = await fetch("http://localhost:3001/rooms", {
+        const response = await fetch(`${HTTP_BACKEND}/rooms`, {
           headers: {
             Authorization: token,
           },
@@ -60,7 +60,7 @@ export default function Lobby() {
     const token = localStorage.getItem("token");
 
     try {
-      const response = await fetch("http://localhost:3001/room", {
+      const response = await fetch(`${HTTP_BACKEND}/room`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -75,7 +75,7 @@ export default function Lobby() {
         throw new Error(data.message || "Failed to create room");
       }
 
-      const updatedRoomsResponse = await fetch("http://localhost:3001/rooms", {
+      const updatedRoomsResponse = await fetch(`${HTTP_BACKEND}/rooms`, {
         headers: {
           Authorization: token || "",
         },
