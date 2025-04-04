@@ -12,15 +12,35 @@ import cors from "cors";
 
 const app = express();
 
+// Log incoming requests for debugging
+app.use((req, res, next) => {
+    console.log(
+        `Received ${req.method} request for ${req.url} from origin ${req.headers.origin}`
+    );
+    next();
+});
+
 // Configure CORS to allow requests from the frontend
 app.use(
     cors({
-        origin: "https://draw-app-fe.onrender.com", // Allow only the frontend origin
-        methods: ["GET", "POST"], // Allow specific methods
-        allowedHeaders: ["Content-Type", "Authorization"], // Allow specific headers
-        credentials: true, // Allow credentials (if needed, e.g., for cookies)
+        origin: "https://draw-app-fe.onrender.com",
+        methods: ["GET", "POST"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+        credentials: true,
     })
 );
+
+// Handle preflight OPTIONS requests for /signin
+app.options("/signin", (req, res) => {
+    res.setHeader(
+        "Access-Control-Allow-Origin",
+        "https://draw-app-fe.onrender.com"
+    );
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.sendStatus(204);
+});
 
 app.use(express.json());
 
@@ -60,7 +80,7 @@ app.post("/signin", async (req, res) => {
     });
 
     if (!user) {
-        res.status(403).send("User not authorisez");
+        res.status(403).send("User not authorized");
         return;
     }
 

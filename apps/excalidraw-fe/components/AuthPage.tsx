@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { HTTP_BACKEND, WS_BACKEND } from "../config";
+
 export function AuthPage({ isSignin }: { isSignin: boolean }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -29,7 +30,6 @@ export function AuthPage({ isSignin }: { isSignin: boolean }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Origin": `${WS_BACKEND}`, 
         },
         body: JSON.stringify(body),
       });

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { RoomCard } from "@/components/RoomCard";
 import { FaPlus, FaSignOutAlt } from "react-icons/fa";
 import { HTTP_BACKEND } from "../../config";
+
 interface Room {
   id: number;
   slug: string;
