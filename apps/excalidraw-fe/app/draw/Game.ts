@@ -24,7 +24,7 @@ export class Game {
 
     constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
         this.canvas = canvas;
-        this.ctx = canvas.getContext('2d')!;
+        this.ctx = canvas.getContext("2d")!;
         this.roomId = roomId;
         this.socket = socket;
         this.init();
@@ -55,19 +55,23 @@ export class Game {
                 const newShape = parsedMessage.shape;
 
                 if (parsedMessage.action === "update") {
-                    const index = this.existingShapes.findIndex(item => item.id === parsedMessage.id);
+                    const index = this.existingShapes.findIndex(
+                        (item) => item.id === parsedMessage.id
+                    );
                     if (index !== -1) {
                         this.existingShapes[index].shape = newShape;
                     }
                 } else {
-                    const index = this.existingShapes.findIndex(item => item.clientId === parsedMessage.shape.clientId);
+                    const index = this.existingShapes.findIndex(
+                        (item) => item.clientId === parsedMessage.shape.clientId
+                    );
                     if (index !== -1) {
                         this.existingShapes[index].id = parsedMessage.id;
                         delete this.existingShapes[index].clientId;
                     } else {
                         this.existingShapes.push({
                             id: parsedMessage.id,
-                            shape: newShape
+                            shape: newShape,
                         });
                     }
                 }
@@ -93,10 +97,30 @@ export class Game {
 
             this.ctx.setLineDash([]);
             this.ctx.fillStyle = "white";
-            this.ctx.fillRect(x - handleSize / 2, y - handleSize / 2, handleSize, handleSize); // Top-left
-            this.ctx.fillRect(x + width - handleSize / 2, y - handleSize / 2, handleSize, handleSize); // Top-right
-            this.ctx.fillRect(x - handleSize / 2, y + height - handleSize / 2, handleSize, handleSize); // Bottom-left
-            this.ctx.fillRect(x + width - handleSize / 2, y + height - handleSize / 2, handleSize, handleSize); // Bottom-right
+            this.ctx.fillRect(
+                x - handleSize / 2,
+                y - handleSize / 2,
+                handleSize,
+                handleSize
+            ); // Top-left
+            this.ctx.fillRect(
+                x + width - handleSize / 2,
+                y - handleSize / 2,
+                handleSize,
+                handleSize
+            ); // Top-right
+            this.ctx.fillRect(
+                x - handleSize / 2,
+                y + height - handleSize / 2,
+                handleSize,
+                handleSize
+            ); // Bottom-left
+            this.ctx.fillRect(
+                x + width - handleSize / 2,
+                y + height - handleSize / 2,
+                handleSize,
+                handleSize
+            ); // Bottom-right
         } else if (shape.type === "circle") {
             const radius = shape.radius + borderOffset;
 
@@ -106,10 +130,30 @@ export class Game {
 
             this.ctx.setLineDash([]);
             this.ctx.fillStyle = "white";
-            this.ctx.fillRect(shape.x - radius - handleSize / 2, shape.y - handleSize / 2, handleSize, handleSize); // Left
-            this.ctx.fillRect(shape.x + radius - handleSize / 2, shape.y - handleSize / 2, handleSize, handleSize); // Right
-            this.ctx.fillRect(shape.x - handleSize / 2, shape.y - radius - handleSize / 2, handleSize, handleSize); // Top
-            this.ctx.fillRect(shape.x - handleSize / 2, shape.y + radius - handleSize / 2, handleSize, handleSize); // Bottom
+            this.ctx.fillRect(
+                shape.x - radius - handleSize / 2,
+                shape.y - handleSize / 2,
+                handleSize,
+                handleSize
+            ); // Left
+            this.ctx.fillRect(
+                shape.x + radius - handleSize / 2,
+                shape.y - handleSize / 2,
+                handleSize,
+                handleSize
+            ); // Right
+            this.ctx.fillRect(
+                shape.x - handleSize / 2,
+                shape.y - radius - handleSize / 2,
+                handleSize,
+                handleSize
+            ); // Top
+            this.ctx.fillRect(
+                shape.x - handleSize / 2,
+                shape.y + radius - handleSize / 2,
+                handleSize,
+                handleSize
+            ); // Bottom
         } else if (shape.type === "line") {
             const dx = shape.x2 - shape.x1;
             const dy = shape.y2 - shape.y1;
@@ -129,8 +173,18 @@ export class Game {
 
             this.ctx.setLineDash([]);
             this.ctx.fillStyle = "white";
-            this.ctx.fillRect(shape.x1 - handleSize / 2, shape.y1 - handleSize / 2, handleSize, handleSize); // Start
-            this.ctx.fillRect(shape.x2 - handleSize / 2, shape.y2 - handleSize / 2, handleSize, handleSize); // End
+            this.ctx.fillRect(
+                shape.x1 - handleSize / 2,
+                shape.y1 - handleSize / 2,
+                handleSize,
+                handleSize
+            ); // Start
+            this.ctx.fillRect(
+                shape.x2 - handleSize / 2,
+                shape.y2 - handleSize / 2,
+                handleSize,
+                handleSize
+            ); // End
         }
 
         this.ctx.setLineDash([]);
@@ -139,10 +193,20 @@ export class Game {
     renderShapes() {
         this.existingShapes.forEach((item, index) => {
             const shape = item.shape;
-            console.log("Clear canvas called, shape type pushed into db:", shape.type, "with index:", index);
+            console.log(
+                "Clear canvas called, shape type pushed into db:",
+                shape.type,
+                "with index:",
+                index
+            );
             if (shape.type === "rectangle") {
                 this.ctx.strokeStyle = "white";
-                this.ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
+                this.ctx.strokeRect(
+                    shape.x,
+                    shape.y,
+                    shape.width,
+                    shape.height
+                );
             }
             if (shape.type === "circle") {
                 this.ctx.strokeStyle = "white";
@@ -173,7 +237,12 @@ export class Game {
 
     private isPointInShape(shape: Shape, x: number, y: number): boolean {
         if (shape.type === "rectangle") {
-            return x >= shape.x && x <= shape.x + shape.width && y >= shape.y && y <= shape.y + shape.height;
+            return (
+                x >= shape.x &&
+                x <= shape.x + shape.width &&
+                y >= shape.y &&
+                y <= shape.y + shape.height
+            );
         } else if (shape.type === "circle") {
             const dx = x - shape.x;
             const dy = y - shape.y;
@@ -183,11 +252,15 @@ export class Game {
             const lerp = (a: number, b: number, t: number) => a + t * (b - a);
             const dx = shape.x2 - shape.x1;
             const dy = shape.y2 - shape.y1;
-            const t = ((x - shape.x1) * dx + (y - shape.y1) * dy) / (dx * dx + dy * dy);
+            const t =
+                ((x - shape.x1) * dx + (y - shape.y1) * dy) /
+                (dx * dx + dy * dy);
             const clampedT = Math.max(0, Math.min(1, t));
             const nearestX = lerp(shape.x1, shape.x2, clampedT);
             const nearestY = lerp(shape.y1, shape.y2, clampedT);
-            const distance = Math.sqrt((x - nearestX) ** 2 + (y - nearestY) ** 2);
+            const distance = Math.sqrt(
+                (x - nearestX) ** 2 + (y - nearestY) ** 2
+            );
             return distance <= tolerance;
         }
         return false;
@@ -207,7 +280,7 @@ export class Game {
                 { corner: "top-left", x: x1, y: y1 },
                 { corner: "top-right", x: x2, y: y1 },
                 { corner: "bottom-left", x: x1, y: y2 },
-                { corner: "bottom-right", x: x2, y: y2 }
+                { corner: "bottom-right", x: x2, y: y2 },
             ];
 
             for (const handle of handles) {
@@ -226,7 +299,7 @@ export class Game {
                 { corner: "left", x: shape.x - radius, y: shape.y },
                 { corner: "right", x: shape.x + radius, y: shape.y },
                 { corner: "top", x: shape.x, y: shape.y - radius },
-                { corner: "bottom", x: shape.x, y: shape.y + radius }
+                { corner: "bottom", x: shape.x, y: shape.y + radius },
             ];
 
             for (const handle of handles) {
@@ -242,7 +315,7 @@ export class Game {
         } else if (shape.type === "line") {
             const handles = [
                 { corner: "start", x: shape.x1, y: shape.y1 },
-                { corner: "end", x: shape.x2, y: shape.y2 }
+                { corner: "end", x: shape.x2, y: shape.y2 },
             ];
 
             for (const handle of handles) {
@@ -258,13 +331,28 @@ export class Game {
         }
         return null;
     }
-
     private setCursorForHandle(corner: string | null) {
         if (!corner) {
-            this.canvas.style.cursor = "default";
+            // Default cursor when not over a handle, based on selected tool
+            if (this.selectedTool === "hand") {
+                this.canvas.style.cursor = "grab";
+            } else if (this.selectedTool === "select" && this.selectedShape) {
+                this.canvas.style.cursor = "move"; // For dragging selected shapes
+            } else if (this.selectedTool === "eraser") {
+                this.canvas.style.cursor = "crosshair";
+            } else if (
+                this.selectedTool === "rectangle" ||
+                this.selectedTool === "circle" ||
+                this.selectedTool === "line"
+            ) {
+                this.canvas.style.cursor = "crosshair";
+            } else {
+                this.canvas.style.cursor = "default";
+            }
             return;
         }
 
+        // Handle-specific cursors for resizing
         if (corner === "top-left" || corner === "bottom-right") {
             this.canvas.style.cursor = "nwse-resize";
         } else if (corner === "top-right" || corner === "bottom-left") {
@@ -274,7 +362,7 @@ export class Game {
         } else if (corner === "top" || corner === "bottom") {
             this.canvas.style.cursor = "ns-resize";
         } else if (corner === "start" || corner === "end") {
-            this.canvas.style.cursor = "move";
+            this.canvas.style.cursor = "move"; // Consistent with dragging
         }
     }
 
@@ -291,9 +379,15 @@ export class Game {
 
                 // First, check if the click is on a resize handle
                 if (this.selectedShape) {
-                    this.resizeCorner = this.isPointInHandle(this.selectedShape.shape, this.startX, this.startY);
+                    this.resizeCorner = this.isPointInHandle(
+                        this.selectedShape.shape,
+                        this.startX,
+                        this.startY
+                    );
                     if (this.resizeCorner) {
-                        console.log(`Starting resize on corner: ${this.resizeCorner}`);
+                        console.log(
+                            `Starting resize on corner: ${this.resizeCorner}`
+                        );
                         this.isResizing = true;
                         return;
                     }
@@ -302,7 +396,13 @@ export class Game {
                 // If not resizing, check for shape selection
                 this.selectedShape = null;
                 for (const item of this.existingShapes) {
-                    if (this.isPointInShape(item.shape, this.startX, this.startY)) {
+                    if (
+                        this.isPointInShape(
+                            item.shape,
+                            this.startX,
+                            this.startY
+                        )
+                    ) {
                         this.selectedShape = item;
                         this.isDragging = true;
                         console.log(`Selected shape: ${item.shape.type}`);
@@ -321,7 +421,11 @@ export class Game {
 
             // Update cursor based on handle hover
             if (this.selectedTool === "select" && this.selectedShape) {
-                const corner = this.isPointInHandle(this.selectedShape.shape, currentX, currentY);
+                const corner = this.isPointInHandle(
+                    this.selectedShape.shape,
+                    currentX,
+                    currentY
+                );
                 this.setCursorForHandle(corner);
             } else {
                 this.canvas.style.cursor = "default";
@@ -338,7 +442,9 @@ export class Game {
                 const shape = this.selectedShape.shape;
 
                 if (this.isResizing && this.resizeCorner) {
-                    console.log(`Resizing ${shape.type} on corner ${this.resizeCorner}, dx: ${dx}, dy: ${dy}`);
+                    console.log(
+                        `Resizing ${shape.type} on corner ${this.resizeCorner}, dx: ${dx}, dy: ${dy}`
+                    );
                     if (shape.type === "rectangle") {
                         if (this.resizeCorner === "top-left") {
                             shape.x += dx;
@@ -411,9 +517,15 @@ export class Game {
                             }
                         }
                     } else if (shape.type === "circle") {
-                        if (this.resizeCorner === "left" || this.resizeCorner === "right") {
+                        if (
+                            this.resizeCorner === "left" ||
+                            this.resizeCorner === "right"
+                        ) {
                             shape.radius = Math.abs(currentX - shape.x);
-                        } else if (this.resizeCorner === "top" || this.resizeCorner === "bottom") {
+                        } else if (
+                            this.resizeCorner === "top" ||
+                            this.resizeCorner === "bottom"
+                        ) {
                             shape.radius = Math.abs(currentY - shape.y);
                         }
                         if (shape.radius < 5) shape.radius = 5;
@@ -459,11 +571,22 @@ export class Game {
 
             switch (this.selectedTool) {
                 case "rectangle":
-                    this.ctx.strokeRect(this.startX, this.startY, width, height);
+                    this.ctx.strokeRect(
+                        this.startX,
+                        this.startY,
+                        width,
+                        height
+                    );
                     break;
                 case "circle":
                     this.ctx.beginPath();
-                    this.ctx.arc(this.startX + width / 2, this.startY + height / 2, Math.sqrt((width * width + height * height) / 4), 0, Math.PI * 2);
+                    this.ctx.arc(
+                        this.startX + width / 2,
+                        this.startY + height / 2,
+                        Math.sqrt((width * width + height * height) / 4),
+                        0,
+                        Math.PI * 2
+                    );
                     this.ctx.stroke();
                     break;
                 case "line":
@@ -488,16 +611,20 @@ export class Game {
 
             if (this.selectedTool === "select" && this.selectedShape) {
                 if (this.isDragging || this.isResizing) {
-                    console.log(`Sending update for shape: ${this.selectedShape.shape.type}`);
-                    this.socket.send(JSON.stringify({
-                        type: "chat",
-                        message: JSON.stringify({
-                            shape: this.selectedShape.shape,
-                            id: this.selectedShape.id,
-                            action: "update"
-                        }),
-                        roomId: this.roomId
-                    }));
+                    console.log(
+                        `Sending update for shape: ${this.selectedShape.shape.type}`
+                    );
+                    this.socket.send(
+                        JSON.stringify({
+                            type: "chat",
+                            message: JSON.stringify({
+                                shape: this.selectedShape.shape,
+                                id: this.selectedShape.id,
+                                action: "update",
+                            }),
+                            roomId: this.roomId,
+                        })
+                    );
                 }
                 this.isDragging = false;
                 this.isResizing = false;
@@ -505,7 +632,11 @@ export class Game {
                 return;
             }
 
-            if (this.selectedTool !== "rectangle" && this.selectedTool !== "circle" && this.selectedTool !== "line") {
+            if (
+                this.selectedTool !== "rectangle" &&
+                this.selectedTool !== "circle" &&
+                this.selectedTool !== "line"
+            ) {
                 return;
             }
 
@@ -518,7 +649,7 @@ export class Game {
                         y: this.startY,
                         width,
                         height,
-                        clientId: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+                        clientId: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
                     };
                     break;
                 case "circle":
@@ -526,8 +657,10 @@ export class Game {
                         type: "circle",
                         x: this.startX + width / 2,
                         y: this.startY + height / 2,
-                        radius: Math.sqrt((width * width + height * height) / 4),
-                        clientId: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+                        radius: Math.sqrt(
+                            (width * width + height * height) / 4
+                        ),
+                        clientId: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
                     };
                     break;
                 case "line":
@@ -537,7 +670,7 @@ export class Game {
                         y1: this.startY,
                         x2: endX,
                         y2: endY,
-                        clientId: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+                        clientId: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
                     };
                     break;
                 default:
@@ -545,14 +678,16 @@ export class Game {
             }
 
             this.existingShapes.push({ shape });
-            this.socket.send(JSON.stringify({
-                type: "chat",
-                message: JSON.stringify({
-                    shape,
-                    action: "create"
-                }),
-                roomId: this.roomId
-            }));
+            this.socket.send(
+                JSON.stringify({
+                    type: "chat",
+                    message: JSON.stringify({
+                        shape,
+                        action: "create",
+                    }),
+                    roomId: this.roomId,
+                })
+            );
         });
     }
 }

@@ -27,19 +27,24 @@ export default function Canvas({roomId, socket}:{roomId: string, socket: WebSock
 
     const getCursorStyle = () => {
         switch (selectedTool) {
-          case 'hand':
-            return 'cursor-';
-          case 'select':
-            return 'cursor-move'; 
-          default:
-            return 'cursor-crosshair'; 
+            case "hand":
+                return "cursor-grab";
+            case "select":
+                return "cursor-move";
+            case "eraser":
+            case "rectangle":
+            case "circle":
+            case "line":
+                return "cursor-crosshair";
+            default:
+                return "cursor-default";
         }
-      };
+    };
 
     return <>
         <canvas ref={canvasRef} width={width} height={height} className={getCursorStyle()}/>
 
-        <div className="absolute flex m-2 top-0 left-2/4 gap-1 border-1 border-gray-400 rounded-2xl p-2 text-white">
+        <div className="absolute flex m-2 top-0 left-1/4 gap-1 border-1 border-gray-400 rounded-2xl p-2 text-white">
         <button 
             onClick={() => setSelectedTool("hand")}
             className={selectedTool === "hand" ? "bg-zinc-600 text-red-400 p-2 rounded-xl cursor-pointer" : "hover:bg-zinc-600 p-2 rounded-xl cursor-pointer"}
