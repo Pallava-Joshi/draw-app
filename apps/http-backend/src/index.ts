@@ -9,17 +9,28 @@ import {
 } from "@repo/common/types";
 import { prismaClient } from "@repo/db/client";
 import cors from "cors";
+
 const app = express();
 
+// Configure CORS to allow requests from the frontend
+app.use(
+    cors({
+        origin: "https://draw-app-fe.onrender.com", // Allow only the frontend origin
+        methods: ["GET", "POST"], // Allow specific methods
+        allowedHeaders: ["Content-Type", "Authorization"], // Allow specific headers
+        credentials: true, // Allow credentials (if needed, e.g., for cookies)
+    })
+);
+
 app.use(express.json());
-app.use(cors());
+
+// Rest of the routes...
 app.post("/signup", async (req, res) => {
     const parsedData = createUserSchema.safeParse(req.body);
     if (!parsedData.success) {
         res.status(400).send("Invalid username or password");
         return;
     }
-    //bcrypt password before storing
     try {
         const user = await prismaClient.user.create({
             data: {
@@ -53,9 +64,6 @@ app.post("/signin", async (req, res) => {
         return;
     }
 
-    //check for username and password in db
-    //compare password using bcrypt
-
     const token = jwt.sign(
         {
             userId: user?.id,
@@ -66,73 +74,8 @@ app.post("/signin", async (req, res) => {
     res.json({ token });
 });
 
-app.post("/room", middleware, async (req, res) => {
-    const parsedData = createRoomSchema.safeParse(req.body);
-    if (!parsedData.success) {
-        res.status(400).send("Invalid room inputs");
-        return;
-    }
-    //@ts-ignore
-    const userId = req.userId;
-    if (!userId) {
-        res.status(403).send("user not authenticated");
-        return;
-    }
-    try {
-        const room = await prismaClient.room.create({
-            data: {
-                slug: parsedData.data?.name,
-                adminId: userId,
-            },
-        });
-        res.json({ roomId: room.id });
-    } catch (e) {
-        res.status(411).send("room already exists - try different name");
-    }
-});
-
-app.get("/chats/:roomId", async (req, res) => {
-    const roomId = Number(req.params.roomId);
-    const chats = await prismaClient.chat.findMany({
-        where: {
-            roomId: roomId,
-        },
-        orderBy: {
-            id: "desc",
-        },
-        take: 50,
-    });
-    res.json(chats);
-});
-app.get("/room/:slug", async (req, res) => {
-    const slug = req.params.slug;
-    const room = await prismaClient.room.findUnique({
-        where: {
-            slug,
-        },
-    });
-    if (!room) {
-        res.status(404).send("Room not found");
-        return;
-    }
-    res.json(room);
-});
-
-app.get("/rooms", middleware, async (req, res) => {
-    try {
-        const rooms = await prismaClient.room.findMany({
-            include: {
-                admin: {
-                    select: { name: true },
-                },
-            },
-        });
-        res.json(rooms);
-    } catch (e) {
-        res.status(500).send("Failed to fetch rooms");
-    }
-});
+// ... other routes ...
 
 app.listen(process.env.PORT || 3001, () => {
-    console.log("Server started on port 3001");
+    console.log(`Server started on port ${process.env.PORT || 3001}`);
 });

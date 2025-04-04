@@ -24,8 +24,21 @@ function checkUser(token: string): string | null {
 }
 
 wss.on("connection", function connection(ws: WebSocket, request) {
+    // Check the Origin header
+    const origin = request.headers.origin;
+    const allowedOrigin = "https://draw-app-fe.onrender.com";
+
+    if (origin !== allowedOrigin) {
+        console.log(`Connection rejected: Origin ${origin} not allowed`);
+        ws.close(1008, "Origin not allowed");
+        return;
+    }
+
     const url = request.url || "";
-    if (!url) return;
+    if (!url) {
+        ws.close();
+        return;
+    }
 
     const parsedToken = parse(url, true).query.token;
     const token = typeof parsedToken === "string" ? parsedToken : "";
@@ -74,10 +87,9 @@ wss.on("connection", function connection(ws: WebSocket, request) {
                 }
 
                 if (parsedMessage.action === "update") {
-                    // Update the existing chat message using the database id
                     await prismaClient.chat.update({
                         where: {
-                            id: parsedMessage.id, // Use the database id
+                            id: parsedMessage.id,
                         },
                         data: {
                             message: JSON.stringify({
@@ -86,7 +98,6 @@ wss.on("connection", function connection(ws: WebSocket, request) {
                         },
                     });
 
-                    // Broadcast the update to other users
                     users.forEach((user) => {
                         if (user.ws !== ws && user.rooms.includes(roomId)) {
                             user.ws.send(
@@ -103,7 +114,6 @@ wss.on("connection", function connection(ws: WebSocket, request) {
                         }
                     });
                 } else {
-                    // Create a new chat message
                     const chat = await prismaClient.chat.create({
                         data: {
                             roomId: Number(roomId),
@@ -114,7 +124,6 @@ wss.on("connection", function connection(ws: WebSocket, request) {
                         },
                     });
 
-                    // Broadcast the new shape to other users, including the database id
                     users.forEach((user) => {
                         if (user.ws !== ws && user.rooms.includes(roomId)) {
                             user.ws.send(
@@ -122,7 +131,7 @@ wss.on("connection", function connection(ws: WebSocket, request) {
                                     type: "chat",
                                     message: JSON.stringify({
                                         shape: parsedMessage.shape,
-                                        id: chat.id, // Include the database id
+                                        id: chat.id,
                                         action: "create",
                                     }),
                                     roomId,
