@@ -1,2 +1,4 @@
-export const HTTP_BACKEND = "http://localhost:3001";
-export const WS_BACKEND = "ws://localhost:8080";
+export const WS_BACKEND =
+    process.env.WS_BACKEND || "wss://draw-app-ws-server.onrender.com";
+export const API_URL =
+    process.env.API_URL || "https://draw-app-http-backend.onrender.com";
