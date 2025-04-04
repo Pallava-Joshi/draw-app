@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { HTTP_BACKEND, WS_BACKEND } from "../config";
+import { HTTP_BACKEND } from "../config";
 
 export function AuthPage({ isSignin }: { isSignin: boolean }) {
   const router = useRouter();
