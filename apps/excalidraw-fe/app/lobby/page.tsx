@@ -42,8 +42,8 @@ export default function Lobby() {
 
         const data = await response.json();
         setRooms(data);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       } finally {
         setLoading(false);
       }
@@ -85,8 +85,8 @@ export default function Lobby() {
 
       setShowCreateModal(false);
       setNewRoomName("");
-    } catch (err: any) {
-      setCreateError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setCreateLoading(false);
     }

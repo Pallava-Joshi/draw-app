@@ -49,9 +49,8 @@ export function AuthPage({ isSignin }: { isSignin: boolean }) {
       } else {
         router.push("/signin");
       }
-    } catch (err: any) {
-      setError(err.message);
-      console.error("Fetch error:", err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }

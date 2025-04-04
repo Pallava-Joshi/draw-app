@@ -23,7 +23,7 @@ export default function Canvas({roomId, socket}:{roomId: string, socket: WebSock
                 g.destroy();
             }
         } 
-    },[canvasRef])
+    },[canvasRef, roomId, socket])
 
     const getCursorStyle = () => {
         switch (selectedTool) {
