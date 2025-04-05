@@ -151,21 +151,16 @@ app.get("/room/:slug", (req: Request, res: Response) => {
 
 // Get all rooms (protected)
 app.get("/rooms", middleware, (req: Request, res: Response) => {
-    // Wrap async logic in a synchronous handler
-    (async () => {
-        try {
-            const rooms = await prismaClient.room.findMany({
-                include: {
-                    admin: {
-                        select: { name: true },
-                    },
+    prismaClient.room
+        .findMany({
+            include: {
+                admin: {
+                    select: { name: true },
                 },
-            });
-            res.json(rooms);
-        } catch (e) {
-            res.status(500).send("Failed to fetch rooms");
-        }
-    })();
+            },
+        })
+        .then((rooms) => res.json(rooms))
+        .catch((e) => res.status(500).send("Failed to fetch rooms"));
 });
 
 app.listen(process.env.PORT || 3001, () => {
