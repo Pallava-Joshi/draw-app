@@ -169,5 +169,5 @@ app.get("/rooms", middleware, (req: Request, res: Response) => {
 });
 
 app.listen(process.env.PORT || 3001, () => {
-    console.log("Server started on port 3001");
+    console.log(`Server started on port ${process.env.PORT || 3001}`);
 });
