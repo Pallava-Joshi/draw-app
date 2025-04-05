@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { RoomCard } from "@/components/RoomCard";
 import { FaPlus, FaSignOutAlt } from "react-icons/fa";
 import { HTTP_BACKEND } from "../../config";
+
 interface Room {
   id: number;
   slug: string;
@@ -32,18 +33,18 @@ export default function Lobby() {
       try {
         const response = await fetch(`${HTTP_BACKEND}/rooms`, {
           headers: {
-            Authorization: token,
+            Authorization: `Bearer ${token}`, // Use Bearer prefix
           },
         });
 
         if (!response.ok) {
-          throw new Error("Failed to fetch rooms");
+          throw new Error(`Failed to fetch rooms: ${response.statusText}`);
         }
 
-        const data = await response.json();
+        const data: Room[] = await response.json();
         setRooms(data);
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An unexpected error occurred");
       } finally {
         setLoading(false);
       }
@@ -58,13 +59,18 @@ export default function Lobby() {
     setCreateError("");
 
     const token = localStorage.getItem("token");
+    if (!token) {
+      setCreateError("No token found - please sign in again");
+      setCreateLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch(`${HTTP_BACKEND}/room`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: token || "",
+          Authorization: `Bearer ${token}`, // Use Bearer prefix
         },
         body: JSON.stringify({ name: newRoomName }),
       });
@@ -75,18 +81,13 @@ export default function Lobby() {
         throw new Error(data.message || "Failed to create room");
       }
 
-      const updatedRoomsResponse = await fetch(`${HTTP_BACKEND}/rooms`, {
-        headers: {
-          Authorization: token || "",
-        },
-      });
-      const updatedRooms = await updatedRoomsResponse.json();
-      setRooms(updatedRooms);
+      const newRoom: Room = { id: data.roomId, slug: newRoomName, admin: { name: "You" } };
+      setRooms([...rooms, newRoom]);
 
       setShowCreateModal(false);
       setNewRoomName("");
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setCreateLoading(false);
     }
@@ -100,7 +101,7 @@ export default function Lobby() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-        Loading...
+        Loading rooms...
       </div>
     );
   }
@@ -136,10 +137,7 @@ export default function Lobby() {
             )}
             <form onSubmit={handleCreateRoom}>
               <div className="mb-4">
-                <label
-                  className="block text-gray-400 mb-2"
-                  htmlFor="roomName"
-                >
+                <label className="block text-gray-400 mb-2" htmlFor="roomName">
                   Room Name
                 </label>
                 <input

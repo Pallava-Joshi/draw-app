@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { HTTP_BACKEND, WS_BACKEND } from "../config";
+
 export function AuthPage({ isSignin }: { isSignin: boolean }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -29,19 +30,16 @@ export function AuthPage({ isSignin }: { isSignin: boolean }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Origin": `${WS_BACKEND}`, 
         },
         body: JSON.stringify(body),
       });
 
-      console.log("Response status:", response.status);
-      console.log("Response headers:", response.headers.get("Access-Control-Allow-Origin"));
-      const data = await response.json();
-      console.log("Response data:", data);
-
       if (!response.ok) {
-        throw new Error(data || `Failed to ${isSignin ? "sign in" : "sign up"}`);
+        const data = await response.json();
+        throw new Error(data.message || `Failed to ${isSignin ? "sign in" : "sign up"}`);
       }
+
+      const data = await response.json();
 
       if (isSignin) {
         localStorage.setItem("token", data.token);
@@ -49,8 +47,8 @@ export function AuthPage({ isSignin }: { isSignin: boolean }) {
       } else {
         router.push("/signin");
       }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setLoading(false);
     }
