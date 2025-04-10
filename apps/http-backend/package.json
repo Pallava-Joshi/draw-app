@@ -9,12 +9,12 @@
     "dev": "pnpm run build && pnpm start"
   },
   "dependencies": {
-    "@types/cors": "^2.8.17",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
     "@repo/backend-common": "workspace:*",
     "@repo/common": "workspace:*",
     "@repo/db": "workspace:*",
