@@ -14,26 +14,17 @@ const wss = new WebSocketServer({ port: Number(process.env.PORT) || 8080 });
 let users: User[] = [];
 
 function checkUser(token: string): string | null {
-  const decoded = jwt.verify(token, JWT_SECRET);
-  console.log(decoded);
-
-  if (typeof decoded == "string") return null;
-
-  if (!decoded || !decoded.userId) return null;
-  return decoded.userId;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (typeof decoded === "string" || !decoded || !decoded.userId) return null;
+    return decoded.userId;
+  } catch (e) {
+    console.error("Error verifying token:", e);
+    return null;
+  }
 }
 
 wss.on("connection", function connection(ws: WebSocket, request) {
-  // Check the Origin header
-  //   const origin = request.headers.origin;
-  //   const allowedOrigin = "http://localhost:3000";
-
-  //   if (origin !== allowedOrigin) {
-  //     console.log(`Connection rejected: Origin ${origin} not allowed`);
-  //     ws.close(1008, "Origin not allowed");
-  //     return;
-  //   }
-
   const url = request.url || "";
   if (!url) {
     ws.close();
@@ -42,8 +33,6 @@ wss.on("connection", function connection(ws: WebSocket, request) {
 
   const parsedToken = parse(url, true).query.token;
   const token = typeof parsedToken === "string" ? parsedToken : "";
-  console.log(token);
-
   const userId = checkUser(token);
   if (userId == null) {
     ws.close();
@@ -161,6 +150,70 @@ wss.on("connection", function connection(ws: WebSocket, request) {
             }
           });
         }
+      }
+
+      if (parsedData.type === "move") {
+        const roomId = parsedData.roomId;
+        const message = parsedData.message;
+        const parsedMessage = JSON.parse(message);
+        const { shapeId, newShape } = parsedMessage;
+
+        if (!roomId || !shapeId || !newShape) {
+          ws.send(
+            JSON.stringify({
+              type: "error",
+              message: "Invalid move inputs",
+            })
+          );
+          return;
+        }
+
+        // Update the shape in the Chat table
+        await prismaClient.chat.update({
+          where: {
+            id: shapeId,
+          },
+          data: {
+            message: JSON.stringify({
+              shape: newShape,
+            }),
+          },
+        });
+
+        // Store the movement in the ShapeMovement table
+        await prismaClient.shapeMovement.upsert({
+          where: {
+            shapeId_roomId: {
+              shapeId,
+              roomId: Number(roomId),
+            },
+          },
+          update: {
+            shapeData: JSON.stringify(newShape),
+            updatedAt: new Date(),
+          },
+          create: {
+            shapeId,
+            roomId: Number(roomId),
+            shapeData: JSON.stringify(newShape),
+          },
+        });
+
+        // Broadcast the move to other clients
+        users.forEach((user) => {
+          if (user.ws !== ws && user.rooms.includes(roomId)) {
+            user.ws.send(
+              JSON.stringify({
+                type: "move",
+                message: JSON.stringify({
+                  shapeId,
+                  newShape,
+                }),
+                roomId,
+              })
+            );
+          }
+        });
       }
     } catch (e) {
       console.error("Error processing message:", e);

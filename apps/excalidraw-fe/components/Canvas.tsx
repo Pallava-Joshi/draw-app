@@ -183,12 +183,12 @@ export default function Canvas({ roomId, socket }: CanvasProps) {
         >
           <Type />
         </button>
-        <button
+        {/* <button
           onClick={() => game?.resetView()}
           className="hover:bg-zinc-600 p-2 rounded-xl cursor-pointer"
         >
           Reset View
-        </button>
+        </button> */}
         <button
           onClick={() => game?.centerView()}
           className="hover:bg-zinc-600 p-2 rounded-xl cursor-pointer"

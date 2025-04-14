@@ -12,16 +12,7 @@ import cors from "cors";
 
 const app = express();
 
-// const corsOptions = {
-//   // origin: "https://draw-app-fe.onrender.com",
-//   methods: ["GET", "POST"],
-//   allowedHeaders: ["Content-Type", "Authorization"], // Add Authorization header
-//   optionsSuccessStatus: 200,
-// };
-
-// app.use(cors(corsOptions));
 app.use(cors());
-// app.options("*", cors(corsOptions));
 app.use(express.json());
 
 // Signup route
@@ -32,7 +23,6 @@ app.post("/signup", (req: Request, res: Response) => {
     return;
   }
 
-  // Wrap async logic in a synchronous handler
   (async () => {
     try {
       const user = await prismaClient.user.create({
@@ -57,7 +47,6 @@ app.post("/signin", (req: Request, res: Response) => {
     return;
   }
 
-  // Wrap async logic in a synchronous handler
   (async () => {
     try {
       const user = await prismaClient.user.findUnique({
@@ -94,7 +83,6 @@ app.post("/room", middleware, (req: Request, res: Response) => {
     return;
   }
 
-  // Wrap async logic in a synchronous handler
   (async () => {
     try {
       const room = await prismaClient.room.create({
@@ -114,13 +102,12 @@ app.post("/room", middleware, (req: Request, res: Response) => {
 app.get("/chats/:roomId", (req: Request, res: Response) => {
   const roomId = Number(req.params.roomId);
 
-  // Wrap async logic in a synchronous handler
   (async () => {
     try {
       const chats = await prismaClient.chat.findMany({
         where: { roomId },
         orderBy: { id: "desc" },
-        take: 50,
+        take: 100, // Increased limit to 100
       });
       res.json(chats);
     } catch (e) {
@@ -129,11 +116,27 @@ app.get("/chats/:roomId", (req: Request, res: Response) => {
   })();
 });
 
+// Get shape movements for a room
+app.get("/shapeMovements/:roomId", (req: Request, res: Response) => {
+  const roomId = Number(req.params.roomId);
+
+  (async () => {
+    try {
+      const movements = await prismaClient.shapeMovement.findMany({
+        where: { roomId },
+        orderBy: { updatedAt: "desc" },
+      });
+      res.json({ movements });
+    } catch (e) {
+      res.status(500).send("Failed to fetch shape movements");
+    }
+  })();
+});
+
 // Get room by slug
 app.get("/room/:slug", (req: Request, res: Response) => {
   const slug = req.params.slug;
 
-  // Wrap async logic in a synchronous handler
   (async () => {
     try {
       const room = await prismaClient.room.findUnique({

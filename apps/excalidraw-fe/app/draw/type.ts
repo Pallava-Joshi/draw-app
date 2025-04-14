@@ -64,10 +64,11 @@ export type Shape =
       zIndex?: number;
     };
 
-export type ShapeWithId = {
+export interface ShapeWithId {
+  id?: number; // Server-assigned ID
+  clientId?: string; // Client-side identifier
   shape: Shape;
-  id?: number;
-};
+}
 
 export type Tool =
   | "rectangle"

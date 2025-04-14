@@ -1,4 +1,5 @@
 import { Shape, Tool, ShapeWithId } from "./type";
+import { getExistingShapes } from "./http";
 
 export class Game {
   private canvas: HTMLCanvasElement;
@@ -29,6 +30,9 @@ export class Game {
   private selectedShapeCallback: ((shape: ShapeWithId | null) => void) | null =
     null;
   socket: WebSocket;
+  private reconnectAttempts: number = 0;
+  private maxReconnectAttempts: number = 5;
+  private reconnectInterval: number = 3000; // 3 seconds
 
   constructor(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket) {
     this.canvas = canvas;
@@ -39,6 +43,7 @@ export class Game {
     this.initHandlers();
     this.initMouseHandler();
     this.addControlsLegend();
+    this.setupWebSocketReconnection();
   }
 
   setTool(tool: Tool): void {
@@ -49,17 +54,54 @@ export class Game {
     this.selectedColor = color;
   }
 
-  public setSelectedShapeCallback(
+  setSelectedShapeCallback(
     callback: (shape: ShapeWithId | null) => void
   ): void {
     this.selectedShapeCallback = callback;
   }
 
   async init(): Promise<void> {
-    // Placeholder for fetching shapes - will be updated when backend is fixed
-    this.existingShapes = [];
+    try {
+      this.existingShapes = await getExistingShapes(this.roomId);
+    } catch (error) {
+      console.error("Failed to fetch existing shapes:", error);
+      this.existingShapes = [];
+    }
     this.applyTransform();
     this.clearCanvas();
+  }
+
+  private setupWebSocketReconnection(): void {
+    this.socket.onclose = () => {
+      if (this.reconnectAttempts < this.maxReconnectAttempts) {
+        setTimeout(() => {
+          console.log(
+            `Reconnecting WebSocket... Attempt ${this.reconnectAttempts + 1}`
+          );
+          this.reconnectAttempts++;
+          const token = localStorage.getItem("token") || "";
+          this.socket = new WebSocket(`ws://localhost:8080?token=${token}`);
+          this.initHandlers();
+          this.setupWebSocketReconnection();
+          this.init(); // Re-fetch shapes on reconnect
+          // Re-join the room
+          this.socket.onopen = () => {
+            this.socket.send(
+              JSON.stringify({
+                type: "join_room",
+                roomId: this.roomId,
+              })
+            );
+          };
+        }, this.reconnectInterval);
+      } else {
+        console.error("Max WebSocket reconnection attempts reached.");
+      }
+    };
+
+    this.socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
   }
 
   destroy(): void {
@@ -72,6 +114,12 @@ export class Game {
     if (this.textInput) {
       this.textInput.remove();
     }
+    this.socket.send(
+      JSON.stringify({
+        type: "leave_room",
+        roomId: this.roomId,
+      })
+    );
   }
 
   private initHandlers(): void {
@@ -89,6 +137,7 @@ export class Game {
             this.existingShapes.push({
               shape: parsedData.shape,
               id: parsedData.id,
+              clientId: parsedData.shape.clientId,
             });
           }
         } else if (parsedData.action === "update") {
@@ -108,12 +157,12 @@ export class Game {
         this.clearCanvas();
       } else if (message.type === "move") {
         const parsedData = JSON.parse(message.message);
-        const { index, newShape } = parsedData;
-        const localIndex = this.existingShapes.findIndex(
-          (item) => item.id === this.existingShapes[index]?.id
+        const { shapeId, newShape } = parsedData;
+        const index = this.existingShapes.findIndex(
+          (item) => item.id === shapeId
         );
-        if (localIndex >= 0 && localIndex < this.existingShapes.length) {
-          this.existingShapes[localIndex].shape = newShape;
+        if (index >= 0 && index < this.existingShapes.length) {
+          this.existingShapes[index].shape = newShape;
           this.clearCanvas();
         }
       }
@@ -802,7 +851,10 @@ export class Game {
           clientId: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           zIndex: this.zIndexCounter++,
         };
-        this.existingShapes.push({ shape: newShape });
+        this.existingShapes.push({
+          shape: newShape,
+          clientId: newShape.clientId,
+        });
         this.socket.send(
           JSON.stringify({
             type: "chat",
@@ -976,7 +1028,7 @@ export class Game {
         clientId: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         zIndex: 0,
       };
-      this.existingShapes.push({ shape });
+      this.existingShapes.push({ shape, clientId: shape.clientId });
     }
   };
 
@@ -1242,15 +1294,12 @@ export class Game {
             roomId: this.roomId,
           })
         );
-        const index = this.existingShapes.findIndex(
-          (item) => item === this.selectedShape
-        );
-        if (index !== -1 && this.isDragging) {
+        if (this.isDragging && this.selectedShape.id) {
           this.socket.send(
             JSON.stringify({
               type: "move",
               message: JSON.stringify({
-                index,
+                shapeId: this.selectedShape.id,
                 newShape: this.selectedShape.shape,
               }),
               roomId: this.roomId,
@@ -1351,7 +1400,7 @@ export class Game {
         return;
     }
 
-    this.existingShapes.push({ shape });
+    this.existingShapes.push({ shape, clientId });
     this.socket.send(
       JSON.stringify({
         type: "chat",

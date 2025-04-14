@@ -8,29 +8,42 @@ datasource db {
 }
 
 model User {
-  id String @id @default(uuid())
-  email String @unique
-  password String
-  name String
-  photo String?
-  rooms Room[]
-  chats Chat[]
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  photo     String?
+  rooms     Room[]
+  chats     Chat[]
 }
 
 model Room {
-  id Int @id @default(autoincrement())
-  slug String @unique
-  createdAt DateTime @default(now())
-  adminId String
-  admin User @relation(fields: [adminId], references: [id])
-  chats Chat[]
+  id        Int       @id @default(autoincrement())
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  adminId   String
+  admin     User      @relation(fields: [adminId], references: [id])
+  chats     Chat[]
+  shapeMovements ShapeMovement[]
 }
 
 model Chat {
- id Int @id @default(autoincrement())
- roomId Int
- message String
- userId String
- user User @relation(fields: [userId], references: [id])
- room Room @relation(fields: [roomId], references: [id])
+  id        Int       @id @default(autoincrement())
+  roomId    Int
+  message   String
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  room      Room      @relation(fields: [roomId], references: [id])
+  shapeMovements ShapeMovement[]
+}
+
+model ShapeMovement {
+  shapeId   Int       @id // Corresponds to Chat.id
+  roomId    Int
+  shapeData String
+  updatedAt DateTime  @default(now())
+  room      Room      @relation(fields: [roomId], references: [id])
+  chat      Chat      @relation(fields: [shapeId], references: [id])
+
+  @@unique([shapeId, roomId], name: "shapeId_roomId")
 }
