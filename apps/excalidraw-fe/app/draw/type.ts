@@ -1,4 +1,3 @@
-// app/draw/type.ts
 export type Shape =
   | {
       type: "rectangle";
@@ -9,6 +8,7 @@ export type Shape =
       color?: string;
       id?: number;
       clientId?: string;
+      zIndex?: number;
     }
   | {
       type: "circle";
@@ -18,6 +18,7 @@ export type Shape =
       color?: string;
       id?: number;
       clientId?: string;
+      zIndex?: number;
     }
   | {
       type: "line";
@@ -28,6 +29,7 @@ export type Shape =
       color?: string;
       id?: number;
       clientId?: string;
+      zIndex?: number;
     }
   | {
       type: "pencil";
@@ -35,6 +37,7 @@ export type Shape =
       color?: string;
       id?: number;
       clientId?: string;
+      zIndex?: number;
     }
   | {
       type: "triangle";
@@ -47,7 +50,24 @@ export type Shape =
       color?: string;
       id?: number;
       clientId?: string;
+      zIndex?: number;
+    }
+  | {
+      type: "text";
+      x: number;
+      y: number;
+      text: string;
+      fontSize: number;
+      color?: string;
+      id?: number;
+      clientId?: string;
+      zIndex?: number;
     };
+
+export type ShapeWithId = {
+  shape: Shape;
+  id?: number;
+};
 
 export type Tool =
   | "rectangle"
@@ -55,12 +75,7 @@ export type Tool =
   | "line"
   | "pencil"
   | "triangle"
+  | "text"
   | "select"
   | "eraser"
   | "hand";
-
-export interface ShapeWithId {
-  id?: number;
-  clientId?: string;
-  shape: Shape;
-}
