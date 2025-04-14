@@ -1,17 +1,57 @@
+// app/draw/http.ts
 import axios from "axios";
 import { HTTP_BACKEND } from "@/config";
 
-async function getExistingShapes(roomId: string) {
-    const response = await axios.get(`${HTTP_BACKEND}/chats/${roomId}`);
-    const messages = response.data;
+export async function getExistingShapes(roomId: string) {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("No token found");
+  }
 
-    const shapesWithId = messages.map((x: { id: number; message: string }) => {
-        const messageData = JSON.parse(x.message);
-        return {
-            id: x.id, // The database ID of the chat message
-            shape: messageData.shape
-        };
+  try {
+    const res = await axios.get(`${HTTP_BACKEND}/chats/${roomId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
-    return shapesWithId;
+
+    const messages = res.data.messages;
+    let shapes = messages.map((x: { message: string }) => {
+      const messageData = JSON.parse(x.message);
+      const shape = messageData.shape;
+      return {
+        id: messageData.id,
+        clientId: shape.clientId,
+        shape,
+      };
+    });
+
+    try {
+      const movementsRes = await axios.get(
+        `${HTTP_BACKEND}/shapeMovements/${roomId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const movements = movementsRes.data.movements;
+      if (movements && movements.length > 0) {
+        movements.forEach((movement: any) => {
+          const shapeIndex = movement.shapeIndex;
+          if (shapes[shapeIndex]) {
+            shapes[shapeIndex].shape = JSON.parse(movement.shapeData);
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching shape movements:", error);
+    }
+
+    return shapes;
+  } catch (error) {
+    console.error("Error fetching shapes:", error);
+    return [];
+  }
 }
-export default getExistingShapes;
